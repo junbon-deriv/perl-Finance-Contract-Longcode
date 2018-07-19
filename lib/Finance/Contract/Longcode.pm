@@ -38,7 +38,7 @@ use Exporter qw(import);
 use File::ShareDir ();
 use Finance::Contract::Category;
 use Finance::Underlying;
-use Finance::Asset;
+use Finance::Asset::Market::Registry;
 use Format::Util::Numbers qw(formatnumber);
 use Scalar::Util qw(looks_like_number);
 use Time::Duration::Concise::Localize;
