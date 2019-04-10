@@ -84,7 +84,10 @@ sub shortcode_to_longcode {
     my $is_forward_starting = $params->{starts_as_forward_starting};
     my $date_start          = Date::Utility->new($params->{date_start});
     my $date_expiry         = Date::Utility->new($params->{date_expiry});
-    my $expiry_type = $params->{duration} =~ /^\d+t$/ ? 'tick' : $date_expiry->epoch - $date_start->epoch > SECONDS_IN_A_DAY ? 'daily' : 'intraday';
+    my $expiry_type =
+          ($params->{duration} and $params->{duration} =~ /^\d+t$/) ? 'tick'
+        : $date_expiry->epoch - $date_start->epoch > SECONDS_IN_A_DAY ? 'daily'
+        :                                                               'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' && !$is_forward_starting && $params->{fixed_expiry};
 
     my $longcode_key = lc($contract_type . '_' . $expiry_type);
