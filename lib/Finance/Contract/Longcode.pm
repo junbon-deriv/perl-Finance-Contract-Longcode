@@ -77,14 +77,14 @@ sub shortcode_to_longcode {
 
     return $LONGCODES->{legacy_contract} if $params->{bet_type} eq 'Invalid';
 
-    defined $params->{date_expiry} or defined $params->{tick_count} or die 'Invalid shortcode. No expiry is specified.';
+    defined $params->{date_expiry} or defined $params->{duration} or die 'Invalid shortcode. No expiry is specified.';
 
     my $underlying          = Finance::Underlying->by_symbol($params->{underlying});
     my $contract_type       = $params->{bet_type};
     my $is_forward_starting = $params->{starts_as_forward_starting};
     my $date_start          = Date::Utility->new($params->{date_start});
     my $date_expiry         = Date::Utility->new($params->{date_expiry});
-    my $expiry_type         = $params->{tick_expiry} ? 'tick' : $date_expiry->epoch - $date_start->epoch > SECONDS_IN_A_DAY ? 'daily' : 'intraday';
+    my $expiry_type = $params->{duration} =~ /^\d+t$/ ? 'tick' : $date_expiry->epoch - $date_start->epoch > SECONDS_IN_A_DAY ? 'daily' : 'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' && !$is_forward_starting && $params->{fixed_expiry};
 
     my $longcode_key = lc($contract_type . '_' . $expiry_type);
@@ -111,8 +111,9 @@ sub shortcode_to_longcode {
     } elsif ($expiry_type eq 'daily') {
         $when_end = [$LONGCODES->{close_on}, $date_expiry->date];
     } elsif ($expiry_type eq 'tick') {
-        $when_end   = [$params->{tick_count}];
-        $when_reset = [int($params->{tick_count} * 0.5)];
+        my ($tick_count) = $params->{duration} =~ /(\d+)t$/;
+        $when_end   = [$tick_count];
+        $when_reset = [int($tick_count * 0.5)];
         $when_start = [$LONGCODES->{first_tick}];
     }
 
