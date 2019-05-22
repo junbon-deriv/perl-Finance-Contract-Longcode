@@ -297,7 +297,7 @@ sub shortcode_to_parameters {
         $bet_parameters->{amount}              = $stake;
         $bet_parameters->{multiplier}          = $multiplier;
         $bet_parameters->{stop_out_percentage} = $stop_out_percentage;
-        $bet_parameters->{entry_spot}          = $entry_spot;
+        $bet_parameters->{entry_spot}          = _strike_string($entry_spot, $underlying_symbol, $bet_type);
     }
 
     return $bet_parameters;
