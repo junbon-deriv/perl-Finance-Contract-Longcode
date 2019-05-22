@@ -169,8 +169,9 @@ sub shortcode_to_parameters {
     $is_sold //= 0;
 
     my (
-        $bet_type,     $underlying_symbol, $payout,              $date_start,   $date_expiry,          $barrier, $barrier2,
-        $fixed_expiry, $duration,          $contract_multiplier, $product_type, $trading_window_start, $selected_tick,
+        $bet_type,      $underlying_symbol,   $payout,     $date_start,          $date_expiry,  $barrier,
+        $barrier2,      $fixed_expiry,        $duration,   $contract_multiplier, $product_type, $trading_window_start,
+        $selected_tick, $stop_out_percentage, $entry_spot, $stake,               $multiplier,
     );
 
     my $forward_start = 0;
@@ -184,9 +185,17 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    if ($shortcode =~
+    if ($shortcode =~ /^(MULTUP|MULTDOWN)_(R?_?[^_\W]+)_(\d*\.?\d*)_(\d+)_(\d+)_(\d*\.?\d*)_(\d+)$/) {
+        $bet_type            = $1;
+        $underlying_symbol   = $2;
+        $stake               = $3;
+        $multiplier          = $4;
+        $date_start          = $5;
+        $stop_out_percentage = $6;
+        $entry_spot          = $7;
+    } elsif ($shortcode =~
         /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>[F]?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)(?:_(?<extra>[PM])(\d*\.?\d+))?$/)
-    {                               # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
+    {    # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
         $bet_type          = $1;
         $underlying_symbol = $2;
         $payout            = $3;
@@ -231,6 +240,7 @@ sub shortcode_to_parameters {
         } else {
             $date_expiry = $5;
         }
+        # MULTUP_R_100_100_10_1558396800_0.05_100000000
     } else {
         return $legacy_params;
     }
@@ -249,12 +259,10 @@ sub shortcode_to_parameters {
         :                      ();
 
     my $bet_parameters = {
-        shortcode   => $shortcode,
-        bet_type    => $bet_type,
-        underlying  => $underlying_symbol,
-        amount_type => 'payout',
-        amount      => $payout,
-        date_start  => $date_start,
+        shortcode  => $shortcode,
+        bet_type   => $bet_type,
+        underlying => $underlying_symbol,
+        date_start => $date_start,
         ($selected_tick ? (selected_tick => $selected_tick) : ()),
         currency                   => $currency,
         fixed_expiry               => $fixed_expiry,
@@ -262,6 +270,11 @@ sub shortcode_to_parameters {
         starts_as_forward_starting => $forward_start,
         %barriers,
     };
+
+    if (defined $payout) {
+        $bet_parameters->{amount_type} = 'payout';
+        $bet_parameters->{amount}      = $payout;
+    }
 
     $bet_parameters->{selected_tick} = $selected_tick if defined $selected_tick;
     $bet_parameters->{duration}      = $duration      if $duration;
@@ -277,6 +290,14 @@ sub shortcode_to_parameters {
     if ($bet_type =~ /$nonbinary_list/) {
         $bet_parameters->{multiplier}  = $contract_multiplier;
         $bet_parameters->{amount_type} = 'multiplier';
+    }
+
+    if ($bet_type =~ /^MULT(?:UP|DOWN)$/) {
+        $bet_parameters->{amount_type}         = 'stake';
+        $bet_parameters->{amount}              = $stake;
+        $bet_parameters->{multiplier}          = $multiplier;
+        $bet_parameters->{stop_out_percentage} = $stop_out_percentage;
+        $bet_parameters->{entry_spot}          = $entry_spot;
     }
 
     return $bet_parameters;
