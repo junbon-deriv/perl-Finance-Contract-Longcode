@@ -169,9 +169,10 @@ sub shortcode_to_parameters {
     $is_sold //= 0;
 
     my (
-        $bet_type,      $underlying_symbol,   $payout,     $date_start,          $date_expiry,  $barrier,
-        $barrier2,      $fixed_expiry,        $duration,   $contract_multiplier, $product_type, $trading_window_start,
-        $selected_tick, $stop_out_percentage, $entry_spot, $stake,               $multiplier,   $auto_renew,
+        $bet_type,     $underlying_symbol,    $payout,        $date_start,          $date_expiry,
+        $barrier,      $barrier2,             $fixed_expiry,  $duration,            $contract_multiplier,
+        $product_type, $trading_window_start, $selected_tick, $stop_out_percentage, $entry_spot,
+        $stake,        $multiplier,           $auto_renew,    $insurance_total_cost
     );
 
     my $forward_start = 0;
@@ -185,17 +186,18 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    # CONTRACT-TYPE_UNDERLYING-SYMBOL_STAKE_MULTIPLIER_START-EPOCH_END-EPOCH_ENTRY-SPOT_BARRIER_AUTO-RENEW-FLAG
-    if ($shortcode =~ /^(INSUP|INSDOWN)_(R?_?[^_\W]+)_(\d*\.?\d*)_(\d+)_(\d{10})_(\d{10})_(\d+)_(\d+)_([0,1])$/) {
-        $bet_type          = $1;
-        $underlying_symbol = $2;
-        $stake             = $3;
-        $multiplier        = $4;
-        $date_start        = $5;
-        $date_expiry       = $6;
-        $entry_spot        = $7;
-        $barrier           = $8;
-        $auto_renew        = $9;
+    # CONTRACT-TYPE_UNDERLYING-SYMBOL_STAKE_MULTIPLIER_START-EPOCH_END-EPOCH_ENTRY-SPOT_BARRIER_INSURANCE-TOTAL-COST_AUTO-RENEW-FLAG
+    if ($shortcode =~ /^(INSUP|INSDOWN)_(R?_?[^_\W]+)_(\d*\.?\d*)_(\d+)_(\d{10})_(\d{10})_(\d+)_(\d+)_(\d*\.?\d*)_([0,1])$/) {
+        $bet_type             = $1;
+        $underlying_symbol    = $2;
+        $stake                = $3;
+        $multiplier           = $4;
+        $date_start           = $5;
+        $date_expiry          = $6;
+        $entry_spot           = $7;
+        $barrier              = $8;
+        $insurance_total_cost = $9;
+        $auto_renew           = $10;
     } elsif ($shortcode =~ /^(MULTUP|MULTDOWN)_(R?_?[^_\W]+)_(\d*\.?\d*)_(\d+)_(\d+)_(\d*\.?\d*)_(\d+)$/) {
         $bet_type            = $1;
         $underlying_symbol   = $2;
@@ -310,11 +312,12 @@ sub shortcode_to_parameters {
         $bet_parameters->{entry_spot}          = _strike_string($entry_spot, $underlying_symbol, $bet_type);
     }
 
-    if ($bet_type =~ /^INS(?:UP|DOWN)S/) {
+    if ($bet_type =~ /^INS(?:UP|DOWN)$/) {
         $bet_parameters->{main_contract_ask_price}  = $stake;
         $bet_parameters->{main_contract_multiplier} = $multiplier;
         $bet_parameters->{main_contract_entry_spot} = _strike_string($entry_spot, $underlying_symbol, $bet_type);
         $bet_parameters->{auto_renew}               = $auto_renew;
+        $bet_parameters->{total_cost}               = $insurance_total_cost;
     }
 
     return $bet_parameters;
