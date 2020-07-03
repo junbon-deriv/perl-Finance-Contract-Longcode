@@ -172,7 +172,7 @@ sub shortcode_to_parameters {
     my (
         $bet_type,      $underlying_symbol, $payout,       $date_start,          $date_expiry,  $barrier,
         $barrier2,      $fixed_expiry,      $duration,     $contract_multiplier, $product_type, $trading_window_start,
-        $selected_tick, $stake,             $cancellation, $cancellation_tp
+        $selected_tick, $stake,             $cancellation
     );
 
     my $forward_start = 0;
@@ -194,7 +194,6 @@ sub shortcode_to_parameters {
         $date_start          = $5;
         $date_expiry         = $6;
         $cancellation        = $7;
-        $cancellation_tp     = $8;
     } elsif ($shortcode =~
         /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>[F]?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)(?:_(?<extra>[PM])(\d*\.?\d+))?$/)
     {    # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
@@ -296,8 +295,7 @@ sub shortcode_to_parameters {
     }
 
     if (defined $cancellation) {
-        $bet_parameters->{cancellation}    = $cancellation;
-        $bet_parameters->{cancellation_tp} = $cancellation_tp;
+        $bet_parameters->{addon}{cancellation}{duration}    = $cancellation;
     }
 
     return $bet_parameters;
