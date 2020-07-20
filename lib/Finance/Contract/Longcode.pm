@@ -167,12 +167,12 @@ Returns a hash reference.
 =cut
 
 sub shortcode_to_parameters {
-    my ($shortcode, $currency) = @_;
+    my ($shortcode, $currency, $extra_params) = @_;
 
     my (
-        $bet_type,      $underlying_symbol, $payout,       $date_start,          $date_expiry,  $barrier,
-        $barrier2,      $fixed_expiry,      $duration,     $contract_multiplier, $product_type, $trading_window_start,
-        $selected_tick, $stake,             $cancellation
+        $bet_type,     $underlying_symbol,    $payout,        $date_start, $date_expiry,
+        $barrier,      $barrier2,             $fixed_expiry,  $duration,   $contract_multiplier,
+        $product_type, $trading_window_start, $selected_tick, $stake,      $cancellation
     );
 
     my $forward_start = 0;
@@ -295,7 +295,14 @@ sub shortcode_to_parameters {
     }
 
     if (defined $cancellation) {
-        $bet_parameters->{addon}{cancellation}{duration}    = $cancellation;
+        $bet_parameters->{addon}{cancellation} = {
+            duration => $cancellation,
+            ($extra_params && $extra_params->{addon} && $extra_params->{addon}{cancellation}) ? %{$extra_params->{addon}{cancellation}} : (),
+        };
+    }
+
+    if ($extra_params and my $limit_order = $extra_params->{limit_order}) {
+        $bet_parameters->{limit_order} = $limit_order;
     }
 
     return $bet_parameters;
