@@ -167,7 +167,7 @@ Returns a hash reference.
 =cut
 
 sub shortcode_to_parameters {
-    my ($shortcode, $currency) = @_;
+    my ($shortcode, $currency, $maybe_args) = @_;
 
     my (
         $bet_type,     $underlying_symbol,    $payout,        $date_start, $date_expiry,
@@ -287,6 +287,10 @@ sub shortcode_to_parameters {
 
     if (defined $cancellation) {
         $bet_parameters->{cancellation} = $cancellation;
+    }
+
+    if ($maybe_args) {
+        $bet_parameters = {%$bet_parameters, %$maybe_args};
     }
 
     return $bet_parameters;
