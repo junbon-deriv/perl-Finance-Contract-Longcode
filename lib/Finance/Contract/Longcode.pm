@@ -186,7 +186,7 @@ sub shortcode_to_parameters {
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    if ($shortcode =~ /^(MULTUP|MULTDOWN)_([\w\d]+)_(\d*\.?\d*)_(\d+)_(\d+)_(\d+)_(\d+(?:m|h|s)?)$/) {
+    if ($shortcode =~ /^(MULTUP|MULTDOWN)_([\w\d]+)_(\d*\.?\d*)_(\d+)_(\d+)_(\d+)_(\d+(?:m|h|s)?)(?:_\d+\.\d+)?$/) {
         $bet_type            = $1;
         $underlying_symbol   = $2;
         $stake               = $3;
