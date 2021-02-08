@@ -286,7 +286,7 @@ sub shortcode_to_parameters {
     }
 
     if (defined $cancellation) {
-        $bet_parameters->{cancellation} = $cancellation;
+        $bet_parameters->{addon}{cancellation}{duration} = $cancellation;
     }
 
     if ($maybe_args) {
