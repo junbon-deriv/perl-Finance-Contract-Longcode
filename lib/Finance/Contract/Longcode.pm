@@ -285,12 +285,12 @@ sub shortcode_to_parameters {
         $bet_parameters->{amount}      = $stake;
     }
 
-    if (defined $cancellation) {
-        $bet_parameters->{addon}{cancellation}{duration} = $cancellation;
-    }
-
     if ($maybe_args) {
         $bet_parameters = {%$bet_parameters, %$maybe_args};
+    }
+
+    if (defined $cancellation) {
+        $bet_parameters->{addon}{cancellation}{duration} = $cancellation;
     }
 
     return $bet_parameters;
