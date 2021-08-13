@@ -50,6 +50,8 @@ use YAML::XS qw(LoadFile);
 our @EXPORT_OK = qw(shortcode_to_longcode shortcode_to_parameters get_longcodes);
 
 use constant {
+    SECONDS_IN_A_MINUTE      => 60,
+    SECONDS_IN_AN_HOUR       => 3600,
     SECONDS_IN_A_DAY         => 86400,
     FOREX_BARRIER_MULTIPLIER => 1e6,
 };
@@ -179,9 +181,10 @@ sub shortcode_to_parameters {
     my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
-        bet_type   => 'Invalid',    # it doesn't matter what it is if it is a legacy
-        underlying => 'config',
-        currency   => $currency,
+        bet_type        => 'Invalid',    # it doesn't matter what it is if it is a legacy
+        underlying      => 'config',
+        currency        => $currency,
+        duration_type   => '',
     };
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
@@ -291,7 +294,29 @@ sub shortcode_to_parameters {
         $bet_parameters->{cancellation_tp} = $cancellation_tp;
     }
 
+    $bet_parameters->{duration_type} = get_duration_type($bet_parameters);
+
     return $bet_parameters;
+}
+
+=head2 get_duration_type
+
+calculates duration_type from bet_params
+
+Returns a duration_type if can calculate it, unless returns undef
+
+=cut
+
+sub get_duration_type {
+    my $params = shift;
+
+    return "ticks"   if $params->{duration} && $params->{duration} =~ /^\d+t$/;
+    return undef     unless $params->{date_expiry};
+    my $duration  =  $params->{date_expiry} - $params->{date_start};
+    return "seconds" if $duration<SECONDS_IN_A_MINUTE;
+    return "minutes" if $duration>=SECONDS_IN_A_MINUTE && $duration<SECONDS_IN_AN_HOUR;
+    return "hours"   if $duration>=SECONDS_IN_AN_HOUR && $duration<SECONDS_IN_A_DAY;
+    return "days";
 }
 
 ## INTERNAL METHODS ##
