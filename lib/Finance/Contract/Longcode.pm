@@ -91,7 +91,7 @@ sub shortcode_to_longcode {
     my $date_start          = Date::Utility->new($params->{date_start});
     my $date_expiry         = Date::Utility->new($params->{date_expiry});
     my $expiry_type =
-          ($params->{duration} and $params->{duration} =~ /^\d+t$/) ? 'tick'
+          ($params->{duration} and $params->{duration} =~ /^\d+t$/)   ? 'tick'
         : $date_expiry->epoch - $date_start->epoch > SECONDS_IN_A_DAY ? 'daily'
         :                                                               'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' && !$is_forward_starting && $params->{fixed_expiry};
@@ -111,7 +111,7 @@ sub shortcode_to_longcode {
             value => $date_expiry->epoch - $date_start->epoch
         };
         my $duration = $date_expiry->epoch - $date_start->epoch;
-        $duration = $duration + ($duration % 2);
+        $duration   = $duration + ($duration % 2);
         $when_reset = {
             class => 'Time::Duration::Concise::Localize',
             value => $duration * 0.5
@@ -174,22 +174,22 @@ sub shortcode_to_parameters {
     my (
         $bet_type,      $underlying_symbol, $payout,       $date_start,          $date_expiry,  $barrier,
         $barrier2,      $fixed_expiry,      $duration,     $contract_multiplier, $product_type, $trading_window_start,
-        $selected_tick, $stake,             $cancellation, $cancellation_tp
+        $selected_tick, $stake,             $cancellation, $stop_out_level,      $basis_spot_str
     );
 
     my $forward_start = 0;
     my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
-        bet_type        => 'Invalid',    # it doesn't matter what it is if it is a legacy
-        underlying      => 'config',
-        currency        => $currency,
-        duration_type   => '',
+        bet_type      => 'Invalid',    # it doesn't matter what it is if it is a legacy
+        underlying    => 'config',
+        currency      => $currency,
+        duration_type => '',
     };
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
 
-    if ($shortcode =~ /^(MULTUP|MULTDOWN)_([\w\d]+)_(\d*\.?\d*)_(\d+)_(\d+)_(\d+)_(\d+(?:m|h|s)?)_(\d+\.?\d*)$/) {
+    if ($shortcode =~ /^(MULTUP|MULTDOWN)_([\w\d]+)_(\d*\.?\d*)_(\d+)_(\d+)_(\d+)_(\d+(?:m|h|s)?)_(\d+\.?\d*)(?:_(\d+))?$/) {
         $bet_type            = $1;
         $underlying_symbol   = $2;
         $stake               = $3;
@@ -197,7 +197,8 @@ sub shortcode_to_parameters {
         $date_start          = $5;
         $date_expiry         = $6;
         $cancellation        = $7;
-        $cancellation_tp     = $8;
+        $stop_out_level      = $8;
+        $basis_spot_str      = $9;
     } elsif ($shortcode =~
         /^([^_]+)_([\w\d]+)_(\d*\.?\d*)_(\d+)(?<start_cond>[F]?)_(\d+)(?<expiry_cond>[FT]?)_(S?-?\d+P?)_(S?-?\d+P?)(?:_(?<extra>[PM])(\d*\.?\d+))?$/)
     {    # Both purchase and expiry date are timestamp (e.g. a 30-min bet)
@@ -289,9 +290,12 @@ sub shortcode_to_parameters {
         $bet_parameters->{amount}      = $stake;
     }
 
-    if (defined $cancellation) {
-        $bet_parameters->{cancellation}    = $cancellation;
-        $bet_parameters->{cancellation_tp} = $cancellation_tp;
+    $bet_parameters->{cancellation} = $cancellation if defined $cancellation;
+
+    # both of these need to be defined for any to be set
+    if (defined $stop_out_level and defined $basis_spot_str) {
+        $bet_parameters->{stop_out_level} = $stop_out_level;
+        $bet_parameters->{basis_spot}     = $basis_spot_str;
     }
 
     $bet_parameters->{duration_type} = get_duration_type($bet_parameters);
@@ -310,12 +314,12 @@ Returns a duration_type if can calculate it, unless returns undef
 sub get_duration_type {
     my $params = shift;
 
-    return "ticks"   if $params->{duration} && $params->{duration} =~ /^\d+t$/;
-    return undef     unless $params->{date_expiry};
-    my $duration  =  $params->{date_expiry} - $params->{date_start};
-    return "seconds" if $duration<SECONDS_IN_A_MINUTE;
-    return "minutes" if $duration>=SECONDS_IN_A_MINUTE && $duration<SECONDS_IN_AN_HOUR;
-    return "hours"   if $duration>=SECONDS_IN_AN_HOUR && $duration<SECONDS_IN_A_DAY;
+    return "ticks" if $params->{duration} && $params->{duration} =~ /^\d+t$/;
+    return undef unless $params->{date_expiry};
+    my $duration = $params->{date_expiry} - $params->{date_start};
+    return "seconds" if $duration < SECONDS_IN_A_MINUTE;
+    return "minutes" if $duration >= SECONDS_IN_A_MINUTE && $duration < SECONDS_IN_AN_HOUR;
+    return "hours"   if $duration >= SECONDS_IN_AN_HOUR  && $duration < SECONDS_IN_A_DAY;
     return "days";
 }
 
