@@ -294,8 +294,8 @@ sub shortcode_to_parameters {
 
     # both of these need to be defined for any to be set
     if (defined $stop_out_level and defined $basis_spot_str) {
-        $bet_parameters->{stop_out_level} = $stop_out_level;
-        $bet_parameters->{basis_spot}     = $basis_spot_str;
+        $bet_parameters->{supplied_stop_out_level} = $stop_out_level;
+        $bet_parameters->{supplied_basis_spot}     = $basis_spot_str;
     }
 
     $bet_parameters->{duration_type} = get_duration_type($bet_parameters);
