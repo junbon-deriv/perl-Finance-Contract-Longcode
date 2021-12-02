@@ -91,7 +91,7 @@ sub shortcode_to_longcode {
     my $date_start          = Date::Utility->new($params->{date_start});
     my $date_expiry         = Date::Utility->new($params->{date_expiry});
     my $expiry_type =
-          ($params->{duration} and $params->{duration} =~ /^\d+t$/) ? 'tick'
+          ($params->{duration} and $params->{duration} =~ /^\d+t$/)   ? 'tick'
         : $date_expiry->epoch - $date_start->epoch > SECONDS_IN_A_DAY ? 'daily'
         :                                                               'intraday';
     $expiry_type .= '_fixed_expiry' if $expiry_type eq 'intraday' && !$is_forward_starting && $params->{fixed_expiry};
@@ -111,7 +111,7 @@ sub shortcode_to_longcode {
             value => $date_expiry->epoch - $date_start->epoch
         };
         my $duration = $date_expiry->epoch - $date_start->epoch;
-        $duration = $duration + ($duration % 2);
+        $duration   = $duration + ($duration % 2);
         $when_reset = {
             class => 'Time::Duration::Concise::Localize',
             value => $duration * 0.5
@@ -181,10 +181,10 @@ sub shortcode_to_parameters {
     my ($initial_bet_type) = split /_/, $shortcode;
 
     my $legacy_params = {
-        bet_type        => 'Invalid',    # it doesn't matter what it is if it is a legacy
-        underlying      => 'config',
-        currency        => $currency,
-        duration_type   => '',
+        bet_type      => 'Invalid',    # it doesn't matter what it is if it is a legacy
+        underlying    => 'config',
+        currency      => $currency,
+        duration_type => '',
     };
 
     return $legacy_params if (not exists Finance::Contract::Category::get_all_contract_types()->{$initial_bet_type} or $shortcode =~ /_\d+H\d+/);
@@ -310,12 +310,12 @@ Returns a duration_type if can calculate it, unless returns undef
 sub get_duration_type {
     my $params = shift;
 
-    return "ticks"   if $params->{duration} && $params->{duration} =~ /^\d+t$/;
-    return undef     unless $params->{date_expiry};
-    my $duration  =  $params->{date_expiry} - $params->{date_start};
-    return "seconds" if $duration<SECONDS_IN_A_MINUTE;
-    return "minutes" if $duration>=SECONDS_IN_A_MINUTE && $duration<SECONDS_IN_AN_HOUR;
-    return "hours"   if $duration>=SECONDS_IN_AN_HOUR && $duration<SECONDS_IN_A_DAY;
+    return "ticks" if $params->{duration} && $params->{duration} =~ /^\d+t$/;
+    return undef unless $params->{date_expiry};
+    my $duration = $params->{date_expiry} - $params->{date_start};
+    return "seconds" if $duration < SECONDS_IN_A_MINUTE;
+    return "minutes" if $duration >= SECONDS_IN_A_MINUTE && $duration < SECONDS_IN_AN_HOUR;
+    return "hours"   if $duration >= SECONDS_IN_AN_HOUR  && $duration < SECONDS_IN_A_DAY;
     return "days";
 }
 
